@@ -107,10 +107,10 @@ def get_args_parser(add_help=True):
         action="store_true",
     )
     parser.add_argument(
-        "--test_only",
-        default=False,
-        type=bool,
-        help="Only test the model"
+        '--test-only', 
+        dest="test_only", 
+        action='store_true', 
+        help='enable debugging'
     )
 
     parser.add_argument(
@@ -213,7 +213,7 @@ def main(args):
         args.start_epoch = checkpoint["epoch"] + 1
         if args.amp:
             scaler.load_state_dict(checkpoint["scaler"])
-
+    print(args.test_only)
     if args.test_only:
         torch.backends.cudnn.deterministic = True
         evaluate(model, data_loader_test, device=device)
