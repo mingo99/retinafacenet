@@ -1,0 +1,45 @@
+import argparse
+import torch
+from detection import detect_video, detect_image
+
+def simple_test():
+        # construct the argument parser
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-v', '--video', default=False, type=bool, 
+                        help='indicate test whether video or image')
+    parser.add_argument('-i', '--input', default='samples/image_1.jpg', 
+                        help='path to input input image')
+    parser.add_argument('-t', '--threshold', default=0.3, type=float,
+                        help='detection threshold')
+    parser.add_argument('-q', '--quantize', default=False, type=bool,
+                        help='whether to quantize model')
+    parser.add_argument('-p', '--path', default="./checkpoint/normal/best.pth", type=str,
+                        help='Path of trained model.')
+    args = vars(parser.parse_args())
+
+    if args['video']:
+        detect_video(args['input'],args['threshold'],args["path"])
+    else:
+        # detect_image(args['input'],args['threshold'],args['quantize'],True,"./checkpoint/ckp_net19.pth")
+        # detect_image(args['input'],args['threshold'],args['quantize'],True,"./weights/ssdlite320_mobilenet_v3_large_coco-a79551df.pth")
+        detect_image(args['input'],args['threshold'],args["path"])
+
+
+if __name__ == "__main__":
+    # simple_test()
+    from torchvision.models import get_model
+    # models_name = list_models()
+    # print(models_name)
+    model = get_model("keypointrcnn_resnet50_fpn").eval()
+
+    # dummy_input = torch.rand((1, 3, 300, 300), device="cpu")
+
+    # torch.onnx.export(
+    #     model,
+    #     dummy_input,
+    #     "model.onnx",
+    #     input_names=["input"],
+    #     output_names=["output"],
+    #     dynamic_axes={"input": {0: "N"}, "output": {0: "N"}},
+    #     opset_version=13
+    # )
