@@ -19,7 +19,6 @@ def encode_keyps(reference_keyps: Tensor, proposals: Tensor, weights: Tensor) ->
 
     # perform some unpacking to make it JIT-fusion friendly
     # reference_keyps = torch.reshape(reference_keyps, (reference_keyps.size(0), 5, 2))
-
     proposals_x1 = proposals[:, 0].unsqueeze(1)
     proposals_y1 = proposals[:, 1].unsqueeze(1)
     proposals_x2 = proposals[:, 2].unsqueeze(1)
@@ -39,7 +38,7 @@ def encode_keyps(reference_keyps: Tensor, proposals: Tensor, weights: Tensor) ->
 
     targets = weights * (reference_keyps - priors[:, :, :2]) / priors[:, :, 2:]
 
-    targets = targets.reshape(targets.size(0), -1)
+    targets = targets.reshape(targets.size(0), 10)
     return targets
 
 
@@ -135,7 +134,7 @@ class KeypointCoder:
         priors = torch.cat([ctr_x, ctr_y, widths, heights], dim=2)
 
         pred_keyps = priors[:,:,:2] + rel_codes * priors[:, :, 2:] / weights
-        pred_keyps = pred_keyps.reshape(pred_keyps.size(0), -1)
+        pred_keyps = pred_keyps.reshape(pred_keyps.size(0), 10)
 
         return pred_keyps
 

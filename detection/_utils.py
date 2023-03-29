@@ -40,9 +40,6 @@ def predict(image, model, device, detection_threshold):
     keyps = pred_keyps[pred_scores >= detection_threshold].astype(np.int32)
     scores = pred_scores[pred_scores >= detection_threshold]
     labels = outputs[0]['labels'][:len(boxes)]
-    print(boxes)
-    print(keyps)
-    print(labels)
     # get all the predicited class names
     pred_classes = [coco_names[i] for i in labels.cpu().numpy()]
     return boxes, keyps, pred_classes, scores, labels

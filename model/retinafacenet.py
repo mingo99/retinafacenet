@@ -662,7 +662,7 @@ class RetinaFaceNet(nn.Module):
                     "boxes": image_boxes[keep],
                     "keypoints": image_keyps[keep],
                     "scores": image_scores[keep],
-                    "labels": image_labels[keep],
+                    "labels": image_labels[keep]
                 }
             )
 
