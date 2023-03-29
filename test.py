@@ -26,20 +26,4 @@ def simple_test():
 
 
 if __name__ == "__main__":
-    # simple_test()
-    from torchvision.models import get_model
-    # models_name = list_models()
-    # print(models_name)
-    model = get_model("keypointrcnn_resnet50_fpn").eval()
-
-    # dummy_input = torch.rand((1, 3, 300, 300), device="cpu")
-
-    # torch.onnx.export(
-    #     model,
-    #     dummy_input,
-    #     "model.onnx",
-    #     input_names=["input"],
-    #     output_names=["output"],
-    #     dynamic_axes={"input": {0: "N"}, "output": {0: "N"}},
-    #     opset_version=13
-    # )
+    simple_test()

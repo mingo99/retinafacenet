@@ -1,5 +1,6 @@
 checkpoints/
 log/
 __pycache__/
+samples/
 
 *.onnx

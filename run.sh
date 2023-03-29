@@ -16,7 +16,7 @@ if [ -n "$2" ]; then
     --lr-steps 16 22 --aspect-ratio-group-factor 3\
     --lr 0.01 --weights-backbone ResNet50_Weights.IMAGENET1K_V1\
     --eval_freq 3\
-    --test_only\
+    --test-only\
     --resume $2
 else
     torchrun --nproc_per_node=$1 train.py\

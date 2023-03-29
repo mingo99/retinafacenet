@@ -37,8 +37,7 @@ def encode_keyps(reference_keyps: Tensor, proposals: Tensor, weights: Tensor) ->
     ex_ctr_y   = ex_ctr_y.expand(reference_keyps.size(0), 5).unsqueeze(2)
     priors = torch.cat([ex_ctr_x, ex_ctr_y, ex_widths, ex_heights], dim=2)
 
-    targets = reference_keyps - priors[:, :, :2]
-    targets /= (weights * priors[:, :, 2:])
+    targets = weights * (reference_keyps - priors[:, :, :2]) / priors[:, :, 2:]
 
     targets = targets.reshape(targets.size(0), -1)
     return targets
@@ -112,25 +111,31 @@ class KeypointCoder:
             rel_codes (Tensor): encoded landmarks.
             boxes (Tensor): reference boxes(anchors).
         """
-
-        boxes = boxes.to(rel_codes.dtype)
-
-        widths = boxes[:, 2] - boxes[:, 0]
-        heights = boxes[:, 3] - boxes[:, 1]
-        ctr_x = boxes[:, 0] + 0.5 * widths
-        ctr_y = boxes[:, 1] + 0.5 * heights
-        priors = torch.stack([ctr_x,ctr_y,widths,heights],dim=1)
-
         dtype = rel_codes.dtype
         device = rel_codes.device
         weights = torch.as_tensor(self.weights, dtype=dtype, device=device)
 
-        pred_keyps = torch.cat((priors[:, :2] + rel_codes[:, :2] * weights * priors[:, 2:],
-                        priors[:, :2] + rel_codes[:, 2:4] * weights * priors[:, 2:],
-                        priors[:, :2] + rel_codes[:, 4:6] * weights * priors[:, 2:],
-                        priors[:, :2] + rel_codes[:, 6:8] * weights * priors[:, 2:],
-                        priors[:, :2] + rel_codes[:, 8:10] * weights * priors[:, 2:],
-                        ), dim=1)
+        rel_codes = torch.reshape(rel_codes, (rel_codes.size(0), 5, 2))
+
+        boxes = boxes.to(rel_codes.dtype)
+        boxes_x1 = boxes[:, 0].unsqueeze(1)
+        boxes_y1 = boxes[:, 1].unsqueeze(1)
+        boxes_x2 = boxes[:, 2].unsqueeze(1)
+        boxes_y2 = boxes[:, 3].unsqueeze(1)
+
+        widths  = boxes_x2 - boxes_x1
+        heights = boxes_y2 - boxes_y1
+        ctr_x   = boxes_x1 + 0.5 * widths
+        ctr_y   = boxes_y1 + 0.5 * heights
+
+        widths  = widths.expand(rel_codes.size(0), 5).unsqueeze(2)
+        heights = heights.expand(rel_codes.size(0), 5).unsqueeze(2)
+        ctr_x   = ctr_x.expand(rel_codes.size(0), 5).unsqueeze(2)
+        ctr_y   = ctr_y.expand(rel_codes.size(0), 5).unsqueeze(2)
+        priors = torch.cat([ctr_x, ctr_y, widths, heights], dim=2)
+
+        pred_keyps = priors[:,:,:2] + rel_codes * priors[:, :, 2:] / weights
+        pred_keyps = pred_keyps.reshape(pred_keyps.size(0), -1)
 
         return pred_keyps
 
@@ -141,7 +146,6 @@ def _keyp_loss(
     keyp_regression_per_image: Tensor,
     cnf: Optional[Dict[str, float]] = None,
 ) -> Tensor:
-    # 只关注人脸关键点
     target_regression = keyp_coder.encode_single(matched_gt_keyps_per_image, anchors_per_image)
     beta = cnf["beta"] if cnf is not None and "beta" in cnf else 1.0
     return F.smooth_l1_loss(keyp_regression_per_image, target_regression, reduction="sum", beta=beta)

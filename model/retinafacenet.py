@@ -515,7 +515,7 @@ class RetinaFaceNet(nn.Module):
         anchor_generator=None,
         head=None,
         proposal_matcher=None,
-        score_thresh=0.05,
+        score_thresh=0.0005,
         nms_thresh=0.5,
         detections_per_img=300,
         fg_iou_thresh=0.5,
@@ -781,7 +781,7 @@ _COMMON_META = {
 
 class RetinaFaceNet_ResNet50_FPN_Weights(WeightsEnum):
     COCOFB_V1 = Weights(
-        url="",
+        url="../checkpoints/server/checkpoint.pth",
         transforms=ObjectDetection,
         meta={
             **_COMMON_META,
@@ -895,10 +895,12 @@ def retinafacenet_resnet50_fpn(
 
     return model
 
-def get_model(name, num_classes=3):
-    if name == "retinafacenet_resnet50_fpn":
-        return retinafacenet_resnet50_fpn(num_classes=num_classes)
-    
+def retinafacenet_resnet50_fpn_with_weight(path):
+    model = retinafacenet_resnet50_fpn()
+    checkpoint = torch.load(path)
+    model.load_state_dict(checkpoint["model"])
+    return model
+
 if __name__ == "__main__":
     from torchvision.models import list_models, get_model
     # models_name = list_models()

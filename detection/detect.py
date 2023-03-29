@@ -1,9 +1,9 @@
 import torch
-import torchvision
+import numpy as np
 import cv2
 import time
 from PIL import Image
-# from model import get_model, get_quant_model, ssdlite_with_quant_weights, ssdlite_with_weights
+from model import retinafacenet_resnet50_fpn_with_weight
 from ._utils import predict, draw_boxes
 
 def detect_image(input, threshold, path=None):
@@ -15,36 +15,15 @@ def detect_image(input, threshold, path=None):
         threshold(Float): The threshold of scores to save predict results
         quantize(Bool): Indicate whether to quantize model
     """
-    # if quantize:
-    #     device = torch.device('cpu')
-    #     if load_weight:
-    #         print(f"The computation device is {device} and model has loaded weights.")
-    #         model = ssdlite_with_quant_weights(path)
-    #         # model = ssdlite_with_qat_weights(path)
-    #     else:
-    #         print(f"The computation device is {device}.")
-    #         model = get_quant_model(device,path,False)
-    # else:
-    #     # define the computation device
-    #     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    #     if load_weight:
-    #         print(f"The computation device is {device} and path of weights is {path}.")
-    #         model = ssdlite_with_weights(path, device, True)
-    #     else:
-    #         print(f"The computation device is {device}.")
-    #         model = get_model(device, False)
-    #         model.eval()
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = torchvision.models.detection.ssd300_vgg16(num_classes=3).to(device)
-    checkpoint = torch.load(path)
-    model.load_state_dict(checkpoint["model"])
-    model.eval()
+    model = retinafacenet_resnet50_fpn_with_weight(path)
+    model.eval().to(device)
     # read the image
     image = Image.open(input)
     # detect outputs
-    boxes, classes, scores, labels = predict(image, model, device, threshold)
+    boxes, keyps, classes, scores, labels = predict(image, model, device, threshold)
     # draw bounding boxes
-    image = draw_boxes(boxes, classes, scores, labels, image)
+    image = draw_boxes(boxes, keyps, classes, scores, labels, image)
     save_name = f"{input.split('/')[-1].split('.')[0]}_{''.join(str(threshold).split('.'))}"
     cv2.imwrite(f"samples/outputs/{save_name}.jpg", image)
     cv2.imshow('Image', image)
@@ -61,11 +40,8 @@ def detect_video(input, threshold, path):
     """
     # define the computation device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    print(f"The computation device is {device}.")
-    model = torchvision.models.detection.ssd300_vgg16(num_classes=3).to(device)
-    checkpoint = torch.load(path)
-    model.load_state_dict(checkpoint["model"])
-    model.eval()
+    model = retinafacenet_resnet50_fpn_with_weight(path)
+    model.eval().to(device)
 
     cap = cv2.VideoCapture(input)
     if (cap.isOpened() == False):
