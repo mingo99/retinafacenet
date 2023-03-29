@@ -900,10 +900,3 @@ def retinafacenet_resnet50_fpn_with_weight(path):
     checkpoint = torch.load(path)
     model.load_state_dict(checkpoint["model"])
     return model
-
-if __name__ == "__main__":
-    from torchvision.models import list_models, get_model
-    # models_name = list_models()
-    # print(models_name)
-    model = get_model("retinafacenet_resnet50_fpn")
-    print(model)
