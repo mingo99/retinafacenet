@@ -1,5 +1,4 @@
 import argparse
-import torch
 from detection import detect_video, detect_image
 
 def simple_test():
@@ -20,8 +19,6 @@ def simple_test():
     if args['video']:
         detect_video(args['input'],args['threshold'],args["path"])
     else:
-        # detect_image(args['input'],args['threshold'],args['quantize'],True,"./checkpoint/ckp_net19.pth")
-        # detect_image(args['input'],args['threshold'],args['quantize'],True,"./weights/ssdlite320_mobilenet_v3_large_coco-a79551df.pth")
         detect_image(args['input'],args['threshold'],args["path"])
 
 

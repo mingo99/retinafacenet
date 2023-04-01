@@ -62,9 +62,9 @@ def draw_boxes(boxes, keyps, classes, scores, labels, image):
                     lineType=cv2.LINE_AA)
         # landms
         if labels[i] == 2:
-            cv2.circle(image, (keyps[i][0], keyps[i][1]), 1, (0, 0, 255), 4)
-            cv2.circle(image, (keyps[i][2], keyps[i][3]), 1, (0, 255, 255), 4)
-            cv2.circle(image, (keyps[i][4], keyps[i][5]), 1, (255, 0, 255), 4)
-            cv2.circle(image, (keyps[i][6], keyps[i][7]), 1, (0, 255, 0), 4)
-            cv2.circle(image, (keyps[i][8], keyps[i][9]), 1, (255, 0, 0), 4)
+            cv2.circle(image, (keyps[i][0][0], keyps[i][0][1]), 1, (0, 0, 255), 2)
+            cv2.circle(image, (keyps[i][1][0], keyps[i][1][1]), 1, (0, 255, 255), 2)
+            cv2.circle(image, (keyps[i][2][0], keyps[i][2][1]), 1, (255, 0, 255), 2)
+            cv2.circle(image, (keyps[i][3][0], keyps[i][3][1]), 1, (0, 255, 0), 2)
+            cv2.circle(image, (keyps[i][4][0], keyps[i][4][1]), 1, (255, 0, 0), 2)
     return image

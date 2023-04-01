@@ -6,7 +6,7 @@ import numpy as np
 import torch
 import torchvision.models.detection.mask_rcnn
 import utils
-from model import RetinaFaceNet
+from models import RetinaFaceNet
 from datasets import CocoEvaluator
 from datasets import get_coco_api_from_dataset
 

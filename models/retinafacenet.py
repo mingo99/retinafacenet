@@ -12,7 +12,7 @@ from torchvision.models.detection.backbone_utils import _resnet_fpn_extractor, _
 from torchvision.models.detection.transform import GeneralizedRCNNTransform
 from torchvision.models.resnet import resnet50, ResNet50_Weights
 from torchvision.models._utils import _ovewrite_value_param
-from torchvision.models._api import register_model, Weights, WeightsEnum
+from torchvision.models._api import Weights, WeightsEnum
 from torchvision.transforms._presets import ObjectDetection
 
 import math
@@ -23,6 +23,7 @@ import torch.nn as nn
 
 from . import _utils as utils
 from ._utils import _keyp_loss
+from ._api import register_model
 from ._meta import _COCOFB_CATEGORIES
 
 
@@ -657,6 +658,13 @@ class RetinaFaceNet(nn.Module):
             keep = box_ops.batched_nms(image_boxes, image_scores, image_labels, self.nms_thresh)
             keep = keep[: self.detections_per_img]
 
+            # reshape keypoints to fit grcnntransformer
+            dtype = image_keyps.dtype
+            device = image_keyps.device
+            image_keyps = image_keyps.reshape(image_keyps.size(0), 5, 2)
+            image_keyps_v = torch.ones([image_keyps.size(0), 5, 1], dtype=dtype, device=device)
+            image_keyps = torch.cat([image_keyps,image_keyps_v], dim=2)
+
             detections.append(
                 {
                     "boxes": image_boxes[keep],
@@ -797,10 +805,11 @@ class RetinaFaceNet_ResNet50_FPN_Weights(WeightsEnum):
     )
     DEFAULT = COCOFB_V1
 
-@register_model()
+@register_model(name="retinafacenet_resnet50_fpn")
 def retinafacenet_resnet50_fpn(
     *,
-    weights: Optional[RetinaFaceNet_ResNet50_FPN_Weights] = None,
+    # weights: Optional[RetinaFaceNet_ResNet50_FPN_Weights] = None,
+    weights = None,
     progress: bool = True,
     num_classes: Optional[int] = None,
     weights_backbone: Optional[ResNet50_Weights] = ResNet50_Weights.IMAGENET1K_V1,
@@ -868,12 +877,13 @@ def retinafacenet_resnet50_fpn(
     .. autoclass:: torchvision.models.detection.RetinaNet_ResNet50_FPN_Weights
         :members:
     """
-    weights = RetinaFaceNet_ResNet50_FPN_Weights.verify(weights)
+    # weights = RetinaFaceNet_ResNet50_FPN_Weights.verify(weights)
     weights_backbone = ResNet50_Weights.verify(weights_backbone)
 
     if weights is not None:
         weights_backbone = None
-        num_classes = _ovewrite_value_param("num_classes", num_classes, len(weights.meta["categories"]))
+        # num_classes = _ovewrite_value_param("num_classes", num_classes, len(weights.meta["categories"]))
+        num_classes = _ovewrite_value_param("num_classes", num_classes, len(_COMMON_META["categories"]))
     elif num_classes is None:
         num_classes = 3
 
@@ -888,15 +898,13 @@ def retinafacenet_resnet50_fpn(
     )
     model = RetinaFaceNet(backbone, num_classes, **kwargs)
 
+    # if weights is not None:
+    #     model.load_state_dict(weights.get_state_dict(progress=progress))
+    #     if weights == RetinaFaceNet_ResNet50_FPN_Weights.COCOFB_V1:
+    #         overwrite_eps(model, 0.0)
     if weights is not None:
-        model.load_state_dict(weights.get_state_dict(progress=progress))
-        if weights == RetinaFaceNet_ResNet50_FPN_Weights.COCOFB_V1:
-            overwrite_eps(model, 0.0)
+        print(f"Loading weights from {weights}...")
+        checkpoint = torch.load(weights)
+        model.load_state_dict(checkpoint["model"])
 
-    return model
-
-def retinafacenet_resnet50_fpn_with_weight(path):
-    model = retinafacenet_resnet50_fpn()
-    checkpoint = torch.load(path)
-    model.load_state_dict(checkpoint["model"])
     return model

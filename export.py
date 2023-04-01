@@ -2,9 +2,6 @@ import torch
 import torchvision
 import torch.nn as nn
 from typing import OrderedDict, List
-import sys
-# sys.path.append("..")
-from model import retinafacenet_resnet50_fpn
 
 class SimpRetinanet(nn.Module):
     def __init__(self) -> None:
@@ -31,7 +28,7 @@ class SimpRetinanet(nn.Module):
 
 def export_onnx():
     # model = SimpRetinanet().eval().cuda()
-    model = retinafacenet_resnet50_fpn().eval().cuda()
+    model = torchvision.models.get_model("retinafacenet_resnet50_fpn").eval().cuda()
 
     dummy_input = torch.rand((1, 3, 800, 800), device="cuda")
 

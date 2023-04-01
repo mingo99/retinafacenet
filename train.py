@@ -25,10 +25,9 @@ import torch
 import torch.utils.data
 import torchvision
 import torchvision.models.detection
-import torchvision.models.detection.mask_rcnn
 import utils
 from datasets import get_dataloader
-from model import retinafacenet_resnet50_fpn
+import models
 from engine import evaluate, train_one_epoch
 
 
@@ -160,10 +159,8 @@ def main(args):
     if "rcnn" in args.model:
         if args.rpn_score_thresh is not None:
             kwargs["rpn_score_thresh"] = args.rpn_score_thresh
-    # model = torchvision.models.get_model(
-    #     args.model, weights=args.weights, weights_backbone=args.weights_backbone, num_classes=num_classes, **kwargs
-    # )
-    model = retinafacenet_resnet50_fpn()
+
+    model = models.get_model(args.model, weights=args.weights, weights_backbone=args.weights_backbone, num_classes=num_classes, **kwargs)
     model.to(device)
     if args.distributed and args.sync_bn:
         model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)

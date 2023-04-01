@@ -1,22 +1,22 @@
 import torch
+import models
 import numpy as np
 import cv2
 import time
 from PIL import Image
-from model import retinafacenet_resnet50_fpn_with_weight
 from ._utils import predict, draw_boxes
 
-def detect_image(input, threshold, path=None):
+def detect_image(input, threshold, weights=None):
     """
     Test a image.
 
     Arguments:
         input(String): Path of image
         threshold(Float): The threshold of scores to save predict results
-        quantize(Bool): Indicate whether to quantize model
+        weights(Bool): Weights path of model
     """
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = retinafacenet_resnet50_fpn_with_weight(path)
+    model = models.get_model("retinafacenet_resnet50_fpn", weights=weights)
     model.eval().to(device)
     # read the image
     image = Image.open(input)
