@@ -805,7 +805,7 @@ class RetinaFaceNet_ResNet50_FPN_Weights(WeightsEnum):
     )
     DEFAULT = COCOFB_V1
 
-@register_model(name="retinafacenet_resnet50_fpn")
+@register_model()
 def retinafacenet_resnet50_fpn(
     *,
     # weights: Optional[RetinaFaceNet_ResNet50_FPN_Weights] = None,
