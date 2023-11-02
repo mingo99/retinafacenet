@@ -1,6 +1,5 @@
 import torch
 import models
-import numpy as np
 import cv2
 import time
 from PIL import Image
@@ -40,11 +39,11 @@ def detect_video(input, threshold, path):
     """
     # define the computation device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = retinafacenet_resnet50_fpn_with_weight(path)
+    model = models.retinafacenet_resnet50_fpn(path)
     model.eval().to(device)
 
     cap = cv2.VideoCapture(input)
-    if (cap.isOpened() == False):
+    if cap.isOpened():
         print('Error while trying to read video. Please check path again')
     # get the frame width and height
     frame_width = int(cap.get(3))
@@ -61,7 +60,7 @@ def detect_video(input, threshold, path):
     while(cap.isOpened()):
         # capture each frame of the video
         ret, frame = cap.read()
-        if ret == True:
+        if ret:
             # get the start time
             start_time = time.time()
             with torch.no_grad():

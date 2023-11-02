@@ -6,7 +6,7 @@ def simple_test():
     parser = argparse.ArgumentParser()
     parser.add_argument('-v', '--video', default=False, type=bool, 
                         help='indicate test whether video or image')
-    parser.add_argument('-i', '--input', default='samples/image_1.jpg', 
+    parser.add_argument('-i', '--input', default='samples/img_1.jpg', 
                         help='path to input input image')
     parser.add_argument('-t', '--threshold', default=0.3, type=float,
                         help='detection threshold')
