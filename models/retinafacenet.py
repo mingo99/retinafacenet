@@ -1,30 +1,31 @@
-from collections import OrderedDict
-from typing import Any, Optional, Callable, List, Dict, Tuple
-
-from torch import Tensor
-from torchvision.utils import _log_api_usage_once
-from torchvision.ops import boxes as box_ops, misc as misc_nn_ops, sigmoid_focal_loss
-from torchvision.ops.feature_pyramid_network import LastLevelP6P7
-from torchvision.models.detection import _utils as det_utils
-from torchvision.models.detection._utils import _box_loss, overwrite_eps
-from torchvision.models.detection.anchor_utils import AnchorGenerator
-from torchvision.models.detection.backbone_utils import _resnet_fpn_extractor, _validate_trainable_layers
-from torchvision.models.detection.transform import GeneralizedRCNNTransform
-from torchvision.models.resnet import resnet50, ResNet50_Weights
-from torchvision.models._utils import _ovewrite_value_param
-from torchvision.models._api import Weights, WeightsEnum
-from torchvision.transforms._presets import ObjectDetection
-
 import math
 import warnings
+from collections import OrderedDict
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import torch
 import torch.nn as nn
+from torch import Tensor
+from torchvision.models._api import Weights, WeightsEnum
+from torchvision.models._utils import _ovewrite_value_param
+from torchvision.models.detection import _utils as det_utils
+from torchvision.models.detection._utils import _box_loss, overwrite_eps
+from torchvision.models.detection.anchor_utils import AnchorGenerator
+from torchvision.models.detection.backbone_utils import (
+    _resnet_fpn_extractor, _validate_trainable_layers)
+from torchvision.models.detection.transform import GeneralizedRCNNTransform
+from torchvision.models.resnet import ResNet50_Weights, resnet50
+from torchvision.ops import boxes as box_ops
+from torchvision.ops import misc as misc_nn_ops
+from torchvision.ops import sigmoid_focal_loss
+from torchvision.ops.feature_pyramid_network import LastLevelP6P7
+from torchvision.transforms._presets import ObjectDetection
+from torchvision.utils import _log_api_usage_once
 
 from . import _utils as utils
-from ._utils import _keyp_loss
 from ._api import register_model
 from ._meta import _COCOFB_CATEGORIES
+from ._utils import _keyp_loss
 
 
 def _sum(x: List[Tensor]) -> Tensor:

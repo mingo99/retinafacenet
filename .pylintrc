@@ -1,5 +1,4 @@
 [tool.pylint.main]
-disable = E0401
 
 [tool.pylint.design]
 max-args = 15
