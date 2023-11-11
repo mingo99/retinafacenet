@@ -6,7 +6,7 @@ training and evaluation scripts to quickly bootstrap research.
 
 To execute the example commands below you must install the following:
 
-```
+```shell
 cython
 pycocotools
 matplotlib
@@ -18,16 +18,16 @@ You must modify the following flags:
 
 `--nproc_per_node=<number_of_gpus_available>`
 
-Except otherwise noted, all models have been trained on 8x RTX3090 GPUs. 
+Except otherwise noted, all models have been trained on 8x RTX3090 GPUs.
 
-```
+## RetinaFaceNet
 
-### RetinaFaceNet
-```
+```shell
 torchrun --nproc_per_node=8 train.py\
-    --dataset coco\
-    --model retinafacenet_resnet50_fpn --epochs 26\
-    --lr-steps 16 22 --aspect-ratio-group-factor 3\
-    --lr 0.01 --weights-backbone ResNet50_Weights.IMAGENET1K_V1\
-    --eval_freq 3
+--dataset coco\
+--model retinafacenet_resnet50_fpn --epochs 26\
+--lr-steps 16 22 --aspect-ratio-group-factor 3\
+--lr 0.01 --weights-backbone ResNet50_Weights.IMAGENET1K_V1\
+--eval_freq 3
+
 ```
