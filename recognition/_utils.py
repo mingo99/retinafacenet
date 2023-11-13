@@ -41,6 +41,7 @@ def pre_process(image, landmarks):
     image = cv2.cvtColor(np.asarray(image), cv2.COLOR_BGR2RGB)
     imgs = []
     for landmark in landmarks:
+        landmark = landmark[:, 0:2]
         landmark = np.array(landmark, dtype="float32")
         img = norm_crop(image, landmark)
         imgs.append(img)
@@ -53,7 +54,7 @@ def post_process(imgs):
         img = img.transpose((2, 0, 1))
         img = (img - 127.5) / 127.5
         imgs1.append(img)
-    return imgs1
+    return np.array(imgs1)
 
 
 def infer(imgs, model, device):
@@ -74,6 +75,8 @@ def infer(imgs, model, device):
 
 def draw_boxes(image, boxes_face, boxes_body, names):
     img = cv2.cvtColor(np.asarray(image), cv2.COLOR_BGR2RGB)
+    print(boxes_face)
+    print(boxes_body)
     if boxes_face is not None:
         for i in range(boxes_face.shape[0]):
             bbox_face = boxes_face[i, :4]
@@ -85,10 +88,10 @@ def draw_boxes(image, boxes_face, boxes_body, names):
                 (int(bbox_face[0]), int(bbox_face[1])),
                 (int(bbox_face[2]), int(bbox_face[3])),
                 (255, 0, 0),
-                1,
+                2,
             )
             cv2.putText(
-                image,
+                img,
                 name,
                 (int(bbox_face[0]), int(bbox_face[1] - 5)),
                 cv2.FONT_HERSHEY_SIMPLEX,
@@ -103,10 +106,10 @@ def draw_boxes(image, boxes_face, boxes_body, names):
                 (int(bbox_body[0]), int(bbox_body[1])),
                 (int(bbox_body[2]), int(bbox_body[3])),
                 (0, 255, 0),
-                1,
+                2,
             )
             cv2.putText(
-                image,
+                img,
                 name,
                 (int(bbox_body[0]), int(bbox_body[1] - 5)),
                 cv2.FONT_HERSHEY_SIMPLEX,

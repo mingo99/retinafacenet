@@ -19,7 +19,7 @@ def load_face_db(face_db_path, det_model, rec_model, device):
         image_path = os.path.join(face_db_path, path)
         img = Image.open(image_path)
         _, keyps, _, _, labels = infer_det(img, det_model, device, 0.5)
-        landmarks = keyps[labels == 2][:, :, 0:2]
+        landmarks = keyps[labels == 2]
         imgs = pre_process(img, landmarks)
         if imgs is None or len(imgs) > 1:
             print("人脸库中的 %s 图片包含不是1张人脸，自动跳过该图片" % image_path)
@@ -30,15 +30,14 @@ def load_face_db(face_db_path, det_model, rec_model, device):
     return faces_db
 
 
-def match_face(faces_db, image, landmarks, rec_model, threshold, device):
-    imgs = pre_process(image, landmarks)
+def match_face(faces_db, images, landmarks, rec_model, threshold, device):
+    imgs = pre_process(images, landmarks)
     if imgs is None:
         return None
-    imgs = post_process(imgs)
-    print(imgs)
+    faces = post_process(imgs)
     # imgs = np.array(imgs, dtype="float32")
     s = time.time()
-    features = infer(imgs, rec_model, device)
+    features = infer(faces, rec_model, device)
     print("人脸识别时间：%dms" % int((time.time() - s) * 1000))
     names = []
     probs = []
@@ -111,7 +110,7 @@ def recognize(faces_db_path, image_path, weights, thresholds):
     image = Image.open(image_path)
     boxes, keyps, _, _, labels = infer_det(image, det_model, device, thresholds[0])
     face_boxes = boxes[labels == 2]
-    body_boxes = boxes[labels == 2]
+    body_boxes = boxes[labels == 1]
     landmarks = keyps[labels == 2]
 
     names = match_face(faces_db, image, landmarks, rec_model, thresholds[1], device)
