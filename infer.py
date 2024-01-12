@@ -1,5 +1,8 @@
 import argparse
 
+import torch
+
+import models
 from detection import detect_image, detect_video
 from recognition import recognize
 
@@ -52,9 +55,19 @@ def infer():
     )
     args = vars(parser.parse_args())
 
-    weights = ["./weights/retinafacenet_resnet50.pth", "./weights/facenet_mobilev2.pth"]
+    weights = [
+        "./weights/retinafacenet_resnet50.pth",
+        "./weights/facenet_mobilev2_state_dict.pth",
+    ]
     thres = [0.5, 0.5]
     recognize("./face_db", args["input"], weights, thres)
+
+
+def export_weights():
+    rec_model = models.get_model(
+        "facenet_mobilev2", weights="./weights/facenet_mobilev2.pth"
+    )
+    torch.save(rec_model.state_dict(), "./weights/facenet_mobilev2_state_dict.pth")
 
 
 if __name__ == "__main__":

@@ -39,7 +39,7 @@ def get_args_parser(add_help=True):
     )
 
     parser.add_argument(
-        "--data-path", default="../../data/cocofb", type=str, help="dataset path"
+        "--data-path", default="/mnt/e/Projects/data/cocofb", type=str, help="dataset path"
     )
     parser.add_argument("--dataset", default="coco", type=str, help="dataset name")
     parser.add_argument(

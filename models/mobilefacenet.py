@@ -1,14 +1,6 @@
 import torch
-from torch.nn import (
-    BatchNorm1d,
-    BatchNorm2d,
-    Conv2d,
-    Flatten,
-    Linear,
-    Module,
-    PReLU,
-    Sequential,
-)
+from torch.nn import (BatchNorm1d, BatchNorm2d, Conv2d, Flatten, Linear,
+                      Module, PReLU, Sequential)
 
 from ._api import register_model
 
@@ -181,5 +173,6 @@ def facenet_mobilev2(weights):
     Args:
         weights(Str): path of weight
     """
-    model = torch.jit.load(weights)
+    model = MobileFaceNet()
+    model.load_state_dict(torch.load(weights))
     return model

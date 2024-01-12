@@ -5,15 +5,18 @@ from contextlib import redirect_stdout
 import numpy as np
 import pycocotools.mask as mask_util
 import torch
-import utils
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
+
+import utils
 
 
 class CocoEvaluator:
     def __init__(self, coco_gt, iou_types):
         if not isinstance(iou_types, (list, tuple)):
-            raise TypeError(f"This constructor expects iou_types of type list or tuple, instead  got {type(iou_types)}")
+            raise TypeError(
+                f"This constructor expects iou_types of type list or tuple, instead  got {type(iou_types)}"
+            )
         coco_gt = copy.deepcopy(coco_gt)
         self.coco_gt = coco_gt
 
@@ -44,7 +47,9 @@ class CocoEvaluator:
     def synchronize_between_processes(self):
         for iou_type in self.iou_types:
             self.eval_imgs[iou_type] = np.concatenate(self.eval_imgs[iou_type], 2)
-            create_common_coco_eval(self.coco_eval[iou_type], self.img_ids, self.eval_imgs[iou_type])
+            create_common_coco_eval(
+                self.coco_eval[iou_type], self.img_ids, self.eval_imgs[iou_type]
+            )
 
     def accumulate(self):
         for coco_eval in self.coco_eval.values():
@@ -55,20 +60,43 @@ class CocoEvaluator:
             print(f"IoU metric: {iou_type}")
             coco_eval.summarize()
             # 获取每个类别的AP
-            iStr = ' {:<18} {} @[ IoU={:<9} | area={:>6s} | maxDets={:>3d} | cat={:>6s} ] = {:0.3f}'
-            titleStr = 'Average Precision'
-            typeStr = '(AP)'
-            iouStr = '0.5'
-            areaRng = 'all'
+            iStr = " {:<18} {} @[ IoU={:<9} | area={:>6s} | maxDets={:>3d} | cat={:>6s} ] = {:0.3f}"
+            titleStr = "Average Precision"
+            typeStr = "(AP)"
+            iouStr = "0.5"
+            areaRng = "all"
             maxDets = 100
             for catId in coco_eval.params.catIds:
-                s = coco_eval.eval['precision'][0,:,catId-1,0,2]
-                cat_name = coco_eval.cocoGt.cats[catId]['name']
-                if len(s[s>-1])==0:
+                s = coco_eval.eval["precision"][0, :, catId - 1, 0, 2]
+                cat_name = coco_eval.cocoGt.cats[catId]["name"]
+                if len(s[s > -1]) == 0:
                     mean_s = -1
                 else:
-                    mean_s = np.mean(s[s>-1])
-                print(iStr.format(titleStr, typeStr, iouStr, areaRng, maxDets, cat_name, mean_s))
+                    mean_s = np.mean(s[s > -1])
+                print(
+                    iStr.format(
+                        titleStr, typeStr, iouStr, areaRng, maxDets, cat_name, mean_s
+                    )
+                )
+            # 获取每个类别的AR
+            iStr = " {:<18} {} @[ IoU={:<9} | area={:>6s} | maxDets={:>3d} | cat={:>6s} ] = {:0.3f}"
+            titleStr = "Average Recall"
+            typeStr = "(AR)"
+            iouStr = "0.5:0.95"
+            areaRng = "all"
+            maxDets = 100
+            for catId in coco_eval.params.catIds:
+                s = coco_eval.eval["recall"][0, catId - 1, 0, 2]
+                cat_name = coco_eval.cocoGt.cats[catId]["name"]
+                if len(s[s > -1]) == 0:
+                    mean_s = -1
+                else:
+                    mean_s = np.mean(s[s > -1])
+                print(
+                    iStr.format(
+                        titleStr, typeStr, iouStr, areaRng, maxDets, cat_name, mean_s
+                    )
+                )
 
     def prepare(self, predictions, iou_type):
         if iou_type == "bbox":
@@ -119,7 +147,10 @@ class CocoEvaluator:
             labels = prediction["labels"].tolist()
 
             rles = [
-                mask_util.encode(np.array(mask[0, :, :, np.newaxis], dtype=np.uint8, order="F"))[0] for mask in masks
+                mask_util.encode(
+                    np.array(mask[0, :, :, np.newaxis], dtype=np.uint8, order="F")
+                )[0]
+                for mask in masks
             ]
             for rle in rles:
                 rle["counts"] = rle["counts"].decode("utf-8")
@@ -204,4 +235,6 @@ def create_common_coco_eval(coco_eval, img_ids, eval_imgs):
 def evaluate(imgs):
     with redirect_stdout(io.StringIO()):
         imgs.evaluate()
-    return imgs.params.imgIds, np.asarray(imgs.evalImgs).reshape(-1, len(imgs.params.areaRng), len(imgs.params.imgIds))
+    return imgs.params.imgIds, np.asarray(imgs.evalImgs).reshape(
+        -1, len(imgs.params.areaRng), len(imgs.params.imgIds)
+    )

@@ -14,8 +14,8 @@ run_test:
     --model retinafacenet_resnet50_fpn --epochs 26\
     --lr-steps 16 22 --aspect-ratio-group-factor 3\
     --lr 0.01 --weights-backbone ResNet50_Weights.IMAGENET1K_V1\
-    --test-only
-# --resume "./checkpoints/server/checkpoint.pth"
+    --test-only \
+	--resume "./weights/retinafacenet_resnet50.pth"
 
 run_server:
 	sbatch --gpus=8 -p gpu_c128 run.sh 8

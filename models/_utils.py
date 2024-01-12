@@ -1,9 +1,9 @@
 from typing import Dict, List, Optional, Tuple
 
+import torch
 from torch import Tensor
 from torch.nn import functional as F
 
-import torch
 
 @torch.jit._script_if_tracing
 def encode_keyps(reference_keyps: Tensor, proposals: Tensor, weights: Tensor) -> Tensor:

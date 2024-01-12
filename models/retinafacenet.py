@@ -34,6 +34,7 @@ def _sum(x: List[Tensor]) -> Tensor:
         res = res + i
     return res
 
+
 def _v1_to_v2_weights(state_dict, prefix):
     for i in range(4):
         for type in ["weight", "bias"]:
@@ -42,8 +43,12 @@ def _v1_to_v2_weights(state_dict, prefix):
             if old_key in state_dict:
                 state_dict[new_key] = state_dict.pop(old_key)
 
+
 def _default_anchorgen():
-    anchor_sizes = tuple((x, int(x * 2 ** (1.0 / 3)), int(x * 2 ** (2.0 / 3))) for x in [32, 64, 128, 256, 512])
+    anchor_sizes = tuple(
+        (x, int(x * 2 ** (1.0 / 3)), int(x * 2 ** (2.0 / 3)))
+        for x in [32, 64, 128, 256, 512]
+    )
     aspect_ratios = ((0.5, 1.0, 2.0),) * len(anchor_sizes)
     anchor_generator = AnchorGenerator(anchor_sizes, aspect_ratios)
     return anchor_generator
@@ -60,26 +65,44 @@ class RetinaFaceNetHead(nn.Module):
         norm_layer (callable, optional): Module specifying the normalization layer to use. Default: None
     """
 
-    def __init__(self, in_channels, num_anchors, num_classes, norm_layer: Optional[Callable[..., nn.Module]] = None):
+    def __init__(
+        self,
+        in_channels,
+        num_anchors,
+        num_classes,
+        norm_layer: Optional[Callable[..., nn.Module]] = None,
+    ):
         super().__init__()
-        self.classification_head = RetinaFaceNetClassificationHead(in_channels, num_anchors, num_classes, norm_layer=norm_layer)
-        self.bboxregression_head = RetinaFaceNetBboxRegressionHead(in_channels, num_anchors, norm_layer=norm_layer)
-        self.keypregression_head = RetinaFaceNetKeypointRegressionHead(in_channels, num_anchors, norm_layer=norm_layer)
+        self.classification_head = RetinaFaceNetClassificationHead(
+            in_channels, num_anchors, num_classes, norm_layer=norm_layer
+        )
+        self.bboxregression_head = RetinaFaceNetBboxRegressionHead(
+            in_channels, num_anchors, norm_layer=norm_layer
+        )
+        self.keypregression_head = RetinaFaceNetKeypointRegressionHead(
+            in_channels, num_anchors, norm_layer=norm_layer
+        )
 
     def compute_loss(self, targets, head_outputs, anchors, matched_idxs):
         # type: (List[Dict[str, Tensor]], Dict[str, Tensor], List[Tensor], List[Tensor]) -> Dict[str, Tensor]
         return {
-            "classification":  self.classification_head.compute_loss(targets, head_outputs, matched_idxs),
-            "bbox_regression": self.bboxregression_head.compute_loss(targets, head_outputs, anchors, matched_idxs),
-            "keyp_regression": self.keypregression_head.compute_loss(targets, head_outputs, anchors, matched_idxs),
+            "classification": self.classification_head.compute_loss(
+                targets, head_outputs, matched_idxs
+            ),
+            "bbox_regression": self.bboxregression_head.compute_loss(
+                targets, head_outputs, anchors, matched_idxs
+            ),
+            "keyp_regression": self.keypregression_head.compute_loss(
+                targets, head_outputs, anchors, matched_idxs
+            ),
         }
 
     def forward(self, x):
         # type: (List[Tensor]) -> Dict[str, Tensor]
         return {
-            "cls_logits": self.classification_head(x), 
+            "cls_logits": self.classification_head(x),
             "bbox_regression": self.bboxregression_head(x),
-            "keyp_regression": self.keypregression_head(x)
+            "keyp_regression": self.keypregression_head(x),
         }
 
 
@@ -108,7 +131,11 @@ class RetinaFaceNetClassificationHead(nn.Module):
 
         conv = []
         for _ in range(4):
-            conv.append(misc_nn_ops.Conv2dNormActivation(in_channels, in_channels, norm_layer=norm_layer))
+            conv.append(
+                misc_nn_ops.Conv2dNormActivation(
+                    in_channels, in_channels, norm_layer=norm_layer
+                )
+            )
         self.conv = nn.Sequential(*conv)
 
         for layer in self.conv.modules():
@@ -117,9 +144,13 @@ class RetinaFaceNetClassificationHead(nn.Module):
                 if layer.bias is not None:
                     torch.nn.init.constant_(layer.bias, 0)
 
-        self.cls_logits = nn.Conv2d(in_channels, num_anchors * num_classes, kernel_size=3, stride=1, padding=1)
+        self.cls_logits = nn.Conv2d(
+            in_channels, num_anchors * num_classes, kernel_size=3, stride=1, padding=1
+        )
         torch.nn.init.normal_(self.cls_logits.weight, std=0.01)
-        torch.nn.init.constant_(self.cls_logits.bias, -math.log((1 - prior_probability) / prior_probability))
+        torch.nn.init.constant_(
+            self.cls_logits.bias, -math.log((1 - prior_probability) / prior_probability)
+        )
 
         self.num_classes = num_classes
         self.num_anchors = num_anchors
@@ -160,7 +191,9 @@ class RetinaFaceNetClassificationHead(nn.Module):
 
         cls_logits = head_outputs["cls_logits"]
 
-        for targets_per_image, cls_logits_per_image, matched_idxs_per_image in zip(targets, cls_logits, matched_idxs):
+        for targets_per_image, cls_logits_per_image, matched_idxs_per_image in zip(
+            targets, cls_logits, matched_idxs
+        ):
             # determine only the foreground
             foreground_idxs_per_image = matched_idxs_per_image >= 0
             num_foreground = foreground_idxs_per_image.sum()
@@ -169,7 +202,9 @@ class RetinaFaceNetClassificationHead(nn.Module):
             gt_classes_target = torch.zeros_like(cls_logits_per_image)
             gt_classes_target[
                 foreground_idxs_per_image,
-                targets_per_image["labels"][matched_idxs_per_image[foreground_idxs_per_image]],
+                targets_per_image["labels"][
+                    matched_idxs_per_image[foreground_idxs_per_image]
+                ],
             ] = 1.0
 
             # find indices for which anchors should be ignored
@@ -222,15 +257,26 @@ class RetinaFaceNetBboxRegressionHead(nn.Module):
         "box_coder": det_utils.BoxCoder,
     }
 
-    def __init__(self, in_channels, num_anchors, norm_layer: Optional[Callable[..., nn.Module]] = None):
+    def __init__(
+        self,
+        in_channels,
+        num_anchors,
+        norm_layer: Optional[Callable[..., nn.Module]] = None,
+    ):
         super().__init__()
 
         conv = []
         for _ in range(4):
-            conv.append(misc_nn_ops.Conv2dNormActivation(in_channels, in_channels, norm_layer=norm_layer))
+            conv.append(
+                misc_nn_ops.Conv2dNormActivation(
+                    in_channels, in_channels, norm_layer=norm_layer
+                )
+            )
         self.conv = nn.Sequential(*conv)
 
-        self.bbox_reg = nn.Conv2d(in_channels, num_anchors * 4, kernel_size=3, stride=1, padding=1)
+        self.bbox_reg = nn.Conv2d(
+            in_channels, num_anchors * 4, kernel_size=3, stride=1, padding=1
+        )
         torch.nn.init.normal_(self.bbox_reg.weight, std=0.01)
         torch.nn.init.zeros_(self.bbox_reg.bias)
 
@@ -274,16 +320,23 @@ class RetinaFaceNetBboxRegressionHead(nn.Module):
 
         bbox_regression = head_outputs["bbox_regression"]
 
-        for targets_per_image, bbox_regression_per_image, anchors_per_image, matched_idxs_per_image in zip(
-            targets, bbox_regression, anchors, matched_idxs
-        ):
+        for (
+            targets_per_image,
+            bbox_regression_per_image,
+            anchors_per_image,
+            matched_idxs_per_image,
+        ) in zip(targets, bbox_regression, anchors, matched_idxs):
             # determine only the foreground indices, ignore the rest
             foreground_idxs_per_image = torch.where(matched_idxs_per_image >= 0)[0]
             num_foreground = foreground_idxs_per_image.numel()
 
             # select only the foreground boxes
-            matched_gt_boxes_per_image = targets_per_image["boxes"][matched_idxs_per_image[foreground_idxs_per_image]]
-            bbox_regression_per_image = bbox_regression_per_image[foreground_idxs_per_image, :]
+            matched_gt_boxes_per_image = targets_per_image["boxes"][
+                matched_idxs_per_image[foreground_idxs_per_image]
+            ]
+            bbox_regression_per_image = bbox_regression_per_image[
+                foreground_idxs_per_image, :
+            ]
             anchors_per_image = anchors_per_image[foreground_idxs_per_image, :]
 
             # compute the loss
@@ -335,15 +388,26 @@ class RetinaFaceNetKeypointRegressionHead(nn.Module):
         "keyp_coder": utils.KeypointCoder,
     }
 
-    def __init__(self, in_channels, num_anchors, norm_layer: Optional[Callable[..., nn.Module]] = None):
+    def __init__(
+        self,
+        in_channels,
+        num_anchors,
+        norm_layer: Optional[Callable[..., nn.Module]] = None,
+    ):
         super().__init__()
 
         conv = []
         for _ in range(4):
-            conv.append(misc_nn_ops.Conv2dNormActivation(in_channels, in_channels, norm_layer=norm_layer))
+            conv.append(
+                misc_nn_ops.Conv2dNormActivation(
+                    in_channels, in_channels, norm_layer=norm_layer
+                )
+            )
         self.conv = nn.Sequential(*conv)
 
-        self.keyp_reg = nn.Conv2d(in_channels, num_anchors * 10, kernel_size=3, stride=1, padding=1)
+        self.keyp_reg = nn.Conv2d(
+            in_channels, num_anchors * 10, kernel_size=3, stride=1, padding=1
+        )
         torch.nn.init.normal_(self.keyp_reg.weight, std=0.01)
         torch.nn.init.zeros_(self.keyp_reg.bias)
 
@@ -361,25 +425,34 @@ class RetinaFaceNetKeypointRegressionHead(nn.Module):
 
         keyp_regression = head_outputs["keyp_regression"]
 
-        for targets_per_image, keyp_regression_per_image, anchors_per_image, matched_idxs_per_image in zip(
-            targets, keyp_regression, anchors, matched_idxs
-        ):
+        for (
+            targets_per_image,
+            keyp_regression_per_image,
+            anchors_per_image,
+            matched_idxs_per_image,
+        ) in zip(targets, keyp_regression, anchors, matched_idxs):
             # determine only the foreground indices, ignore the rest
             foreground_idxs_per_image = torch.where(matched_idxs_per_image >= 0)[0]
             num_foreground = foreground_idxs_per_image.numel()
 
             # select only the foreground keypoints
-            matched_gt_keyps_per_image = targets_per_image["keypoints"][matched_idxs_per_image[foreground_idxs_per_image]]
-            keyp_regression_per_image = keyp_regression_per_image[foreground_idxs_per_image, :]
+            matched_gt_keyps_per_image = targets_per_image["keypoints"][
+                matched_idxs_per_image[foreground_idxs_per_image]
+            ]
+            keyp_regression_per_image = keyp_regression_per_image[
+                foreground_idxs_per_image, :
+            ]
             anchors_per_image = anchors_per_image[foreground_idxs_per_image, :]
 
             # select only face keypoints
-            matched_gt_labels_per_image = targets_per_image["labels"][matched_idxs_per_image[foreground_idxs_per_image]]
+            matched_gt_labels_per_image = targets_per_image["labels"][
+                matched_idxs_per_image[foreground_idxs_per_image]
+            ]
             face_idxs_per_image = torch.where(matched_gt_labels_per_image == 2)[0]
             anchors_per_image = anchors_per_image[face_idxs_per_image]
             matched_gt_keyps_per_image = matched_gt_keyps_per_image[face_idxs_per_image]
             keyp_regression_per_image = keyp_regression_per_image[face_idxs_per_image]
-            matched_gt_keyps_per_image = matched_gt_keyps_per_image[:,:,:2]
+            matched_gt_keyps_per_image = matched_gt_keyps_per_image[:, :, :2]
 
             # compute the loss
             losses.append(
@@ -387,7 +460,7 @@ class RetinaFaceNetKeypointRegressionHead(nn.Module):
                     self.keyp_coder,
                     anchors_per_image,
                     matched_gt_keyps_per_image,
-                    keyp_regression_per_image
+                    keyp_regression_per_image,
                 )
                 / max(1, num_foreground)
             )
@@ -406,7 +479,7 @@ class RetinaFaceNetKeypointRegressionHead(nn.Module):
             N, _, H, W = keyp_regression.shape
             keyp_regression = keyp_regression.view(N, -1, 10, H, W)
             keyp_regression = keyp_regression.permute(0, 3, 4, 1, 2)
-            keyp_regression = keyp_regression.reshape(N, -1, 10)  # Size=(N, HWA, 4)
+            keyp_regression = keyp_regression.reshape(N, -1, 10)  # Size=(N, HWA, 10)
 
             all_keyp_regression.append(keyp_regression)
 
@@ -546,7 +619,11 @@ class RetinaFaceNet(nn.Module):
         self.anchor_generator = anchor_generator
 
         if head is None:
-            head = RetinaFaceNetHead(backbone.out_channels, anchor_generator.num_anchors_per_location()[0], num_classes)
+            head = RetinaFaceNetHead(
+                backbone.out_channels,
+                anchor_generator.num_anchors_per_location()[0],
+                num_classes,
+            )
         self.head = head
 
         if proposal_matcher is None:
@@ -564,7 +641,9 @@ class RetinaFaceNet(nn.Module):
             image_mean = [0.485, 0.456, 0.406]
         if image_std is None:
             image_std = [0.229, 0.224, 0.225]
-        self.transform = GeneralizedRCNNTransform(min_size, max_size, image_mean, image_std, **kwargs)
+        self.transform = GeneralizedRCNNTransform(
+            min_size, max_size, image_mean, image_std, **kwargs
+        )
 
         self.score_thresh = score_thresh
         self.nms_thresh = nms_thresh
@@ -588,11 +667,18 @@ class RetinaFaceNet(nn.Module):
         for anchors_per_image, targets_per_image in zip(anchors, targets):
             if targets_per_image["boxes"].numel() == 0:
                 matched_idxs.append(
-                    torch.full((anchors_per_image.size(0),), -1, dtype=torch.int64, device=anchors_per_image.device)
+                    torch.full(
+                        (anchors_per_image.size(0),),
+                        -1,
+                        dtype=torch.int64,
+                        device=anchors_per_image.device,
+                    )
                 )
                 continue
 
-            match_quality_matrix = box_ops.box_iou(targets_per_image["boxes"], anchors_per_image)
+            match_quality_matrix = box_ops.box_iou(
+                targets_per_image["boxes"], anchors_per_image
+            )
             matched_idxs.append(self.proposal_matcher(match_quality_matrix))
 
         return self.head.compute_loss(targets, head_outputs, anchors, matched_idxs)
@@ -617,8 +703,16 @@ class RetinaFaceNet(nn.Module):
             image_scores = []
             image_labels = []
 
-            for box_regression_per_level, keyp_regression_per_level, logits_per_level, anchors_per_level in zip(
-                box_regression_per_image, keyp_regression_per_image, logits_per_image, anchors_per_image
+            for (
+                box_regression_per_level,
+                keyp_regression_per_level,
+                logits_per_level,
+                anchors_per_level,
+            ) in zip(
+                box_regression_per_image,
+                keyp_regression_per_image,
+                logits_per_image,
+                anchors_per_image,
             ):
                 num_classes = logits_per_level.shape[-1]
 
@@ -637,12 +731,16 @@ class RetinaFaceNet(nn.Module):
                 labels_per_level = topk_idxs % num_classes
 
                 boxes_per_level = self.box_coder.decode_single(
-                    box_regression_per_level[anchor_idxs], anchors_per_level[anchor_idxs]
+                    box_regression_per_level[anchor_idxs],
+                    anchors_per_level[anchor_idxs],
                 )
-                boxes_per_level = box_ops.clip_boxes_to_image(boxes_per_level, image_shape)
+                boxes_per_level = box_ops.clip_boxes_to_image(
+                    boxes_per_level, image_shape
+                )
 
                 keyps_per_level = self.keyp_coder.decode_single(
-                    keyp_regression_per_level[anchor_idxs], anchors_per_level[anchor_idxs]
+                    keyp_regression_per_level[anchor_idxs],
+                    anchors_per_level[anchor_idxs],
                 )
 
                 image_boxes.append(boxes_per_level)
@@ -656,22 +754,26 @@ class RetinaFaceNet(nn.Module):
             image_labels = torch.cat(image_labels, dim=0)
 
             # non-maximum suppression
-            keep = box_ops.batched_nms(image_boxes, image_scores, image_labels, self.nms_thresh)
+            keep = box_ops.batched_nms(
+                image_boxes, image_scores, image_labels, self.nms_thresh
+            )
             keep = keep[: self.detections_per_img]
 
             # reshape keypoints to fit grcnntransformer
             dtype = image_keyps.dtype
             device = image_keyps.device
             image_keyps = image_keyps.reshape(image_keyps.size(0), 5, 2)
-            image_keyps_v = torch.ones([image_keyps.size(0), 5, 1], dtype=dtype, device=device)
-            image_keyps = torch.cat([image_keyps,image_keyps_v], dim=2)
+            image_keyps_v = torch.ones(
+                [image_keyps.size(0), 5, 1], dtype=dtype, device=device
+            )
+            image_keyps = torch.cat([image_keyps, image_keyps_v], dim=2)
 
             detections.append(
                 {
                     "boxes": image_boxes[keep],
                     "keypoints": image_keyps[keep],
                     "scores": image_scores[keep],
-                    "labels": image_labels[keep]
+                    "labels": image_labels[keep],
                 }
             )
 
@@ -697,7 +799,10 @@ class RetinaFaceNet(nn.Module):
             else:
                 for target in targets:
                     boxes = target["boxes"]
-                    torch._assert(isinstance(boxes, torch.Tensor), "Expected target boxes to be of type Tensor.")
+                    torch._assert(
+                        isinstance(boxes, torch.Tensor),
+                        "Expected target boxes to be of type Tensor.",
+                    )
                     torch._assert(
                         len(boxes.shape) == 2 and boxes.shape[-1] == 4,
                         "Expected target boxes to be a tensor of shape [N, 4].",
@@ -767,16 +872,24 @@ class RetinaFaceNet(nn.Module):
             # split outputs per level
             split_head_outputs: Dict[str, List[Tensor]] = {}
             for k in head_outputs:
-                split_head_outputs[k] = list(head_outputs[k].split(num_anchors_per_level, dim=1))
+                split_head_outputs[k] = list(
+                    head_outputs[k].split(num_anchors_per_level, dim=1)
+                )
             split_anchors = [list(a.split(num_anchors_per_level)) for a in anchors]
 
             # compute the detections
-            detections = self.postprocess_detections(split_head_outputs, split_anchors, images.image_sizes)
-            detections = self.transform.postprocess(detections, images.image_sizes, original_image_sizes)
+            detections = self.postprocess_detections(
+                split_head_outputs, split_anchors, images.image_sizes
+            )
+            detections = self.transform.postprocess(
+                detections, images.image_sizes, original_image_sizes
+            )
 
         if torch.jit.is_scripting():
             if not self._has_warned:
-                warnings.warn("RetinaNet always returns a (Losses, Detections) tuple in scripting")
+                warnings.warn(
+                    "RetinaNet always returns a (Losses, Detections) tuple in scripting"
+                )
                 self._has_warned = True
             return losses, detections
         return self.eager_outputs(losses, detections)
@@ -806,11 +919,12 @@ class RetinaFaceNet_ResNet50_FPN_Weights(WeightsEnum):
     )
     DEFAULT = COCOFB_V1
 
+
 @register_model()
 def retinafacenet_resnet50_fpn(
     *,
     # weights: Optional[RetinaFaceNet_ResNet50_FPN_Weights] = None,
-    weights = None,
+    weights=None,
     progress: bool = True,
     num_classes: Optional[int] = None,
     weights_backbone: Optional[ResNet50_Weights] = ResNet50_Weights.IMAGENET1K_V1,
@@ -884,18 +998,27 @@ def retinafacenet_resnet50_fpn(
     if weights is not None:
         weights_backbone = None
         # num_classes = _ovewrite_value_param("num_classes", num_classes, len(weights.meta["categories"]))
-        num_classes = _ovewrite_value_param("num_classes", num_classes, len(_COMMON_META["categories"]))
+        num_classes = _ovewrite_value_param(
+            "num_classes", num_classes, len(_COMMON_META["categories"])
+        )
     elif num_classes is None:
         num_classes = 3
 
     is_trained = weights is not None or weights_backbone is not None
-    trainable_backbone_layers = _validate_trainable_layers(is_trained, trainable_backbone_layers, 5, 3)
+    trainable_backbone_layers = _validate_trainable_layers(
+        is_trained, trainable_backbone_layers, 5, 3
+    )
     norm_layer = misc_nn_ops.FrozenBatchNorm2d if is_trained else nn.BatchNorm2d
 
-    backbone = resnet50(weights=weights_backbone, progress=progress, norm_layer=norm_layer)
+    backbone = resnet50(
+        weights=weights_backbone, progress=progress, norm_layer=norm_layer
+    )
     # skip P2 because it generates too many anchors (according to their paper)
     backbone = _resnet_fpn_extractor(
-        backbone, trainable_backbone_layers, returned_layers=[2, 3, 4], extra_blocks=LastLevelP6P7(256, 256)
+        backbone,
+        trainable_backbone_layers,
+        returned_layers=[2, 3, 4],
+        extra_blocks=LastLevelP6P7(256, 256),
     )
     model = RetinaFaceNet(backbone, num_classes, **kwargs)
 
