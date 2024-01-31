@@ -6,6 +6,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 import torch
 import torch.nn as nn
 from torch import Tensor
+from torch.quantization import fuse_modules
 from torchvision.models._api import Weights, WeightsEnum
 from torchvision.models._utils import _ovewrite_value_param
 from torchvision.models.detection import _utils as det_utils
@@ -14,7 +15,7 @@ from torchvision.models.detection.anchor_utils import AnchorGenerator
 from torchvision.models.detection.backbone_utils import (
     _resnet_fpn_extractor, _validate_trainable_layers)
 from torchvision.models.detection.transform import GeneralizedRCNNTransform
-from torchvision.models.resnet import ResNet50_Weights, resnet50
+from torchvision.models.resnet import Bottleneck, ResNet50_Weights, resnet50
 from torchvision.ops import boxes as box_ops
 from torchvision.ops import misc as misc_nn_ops
 from torchvision.ops import sigmoid_focal_loss
@@ -849,6 +850,7 @@ class RetinaFaceNet(nn.Module):
         head_outputs = self.head(features)
 
         # create the set of anchors
+        print("images", images)
         anchors = self.anchor_generator(images, features)
 
         losses = {}
@@ -893,6 +895,18 @@ class RetinaFaceNet(nn.Module):
                 self._has_warned = True
             return losses, detections
         return self.eager_outputs(losses, detections)
+
+    def fuse_model(self):
+        fuse_modules(self, [["backbone.body.conv1", "backbone.body.bn1"]], inplace=True)
+        for m in self.modules():
+            if isinstance(m, Bottleneck):
+                fuse_modules(
+                    m,
+                    [["conv1", "bn1"], ["conv2", "bn2"], ["conv3", "bn3"]],
+                    inplace=True,
+                )
+                if m.downsample is not None:
+                    fuse_modules(m.downsample, [["0", "1"]], inplace=True)
 
 
 _COMMON_META = {
@@ -1008,10 +1022,12 @@ def retinafacenet_resnet50_fpn(
     trainable_backbone_layers = _validate_trainable_layers(
         is_trained, trainable_backbone_layers, 5, 3
     )
-    norm_layer = misc_nn_ops.FrozenBatchNorm2d if is_trained else nn.BatchNorm2d
+    # norm_layer = misc_nn_ops.FrozenBatchNorm2d if is_trained else nn.BatchNorm2d
 
     backbone = resnet50(
-        weights=weights_backbone, progress=progress, norm_layer=norm_layer
+        # weights=weights_backbone, progress=progress, norm_layer=norm_layer
+        weights=weights_backbone,
+        progress=progress,
     )
     # skip P2 because it generates too many anchors (according to their paper)
     backbone = _resnet_fpn_extractor(

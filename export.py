@@ -13,6 +13,7 @@ def fuse_conv_bn():
 
 def export_onnx():
     model = models.get_model("retinafacenet_resnet50_fpn").eval().cuda()
+    model.fuse_model()
 
     dummy_input = torch.rand((1, 3, 800, 800), device="cuda")
 
@@ -20,7 +21,7 @@ def export_onnx():
         model,
         dummy_input,
         "quantization/model.onnx",
-        input_names=["input"],
+        input_names=["input.1"],
         output_names=["output"],
         dynamic_axes={"input": {0: "N"}, "output": {0: "N"}},
         opset_version=13,
@@ -50,5 +51,5 @@ def export_mobilefacenet():
 
 
 if __name__ == "__main__":
-    # export_onnx()
-    export_mobilefacenet()
+    export_onnx()
+    # export_mobilefacenet()

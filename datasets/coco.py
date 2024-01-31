@@ -2,16 +2,22 @@ import os
 
 import torch
 import torchvision
-from . import transforms as T
-from . import presets
-from . import utils
+from torchvision.models.detection.transform import GeneralizedRCNNTransform
 
-from .group_by_aspect_ratio import create_aspect_ratio_groups, GroupedBatchSampler
+from . import presets
+from . import transforms as T
+from . import utils
+from .group_by_aspect_ratio import GroupedBatchSampler, create_aspect_ratio_groups
+
 
 class CocoDetection(torchvision.datasets.CocoDetection):
     def __init__(self, img_folder, ann_file, transforms):
         super().__init__(img_folder, ann_file)
         self._transforms = transforms
+
+        image_mean = [0.485, 0.456, 0.406]
+        image_std = [0.229, 0.224, 0.225]
+        self.transform = GeneralizedRCNNTransform(800, 1333, image_mean, image_std)
 
     def __getitem__(self, idx):
         img, target = super().__getitem__(idx)
@@ -19,14 +25,21 @@ class CocoDetection(torchvision.datasets.CocoDetection):
         target = dict(image_id=image_id, annotations=target)
         if self._transforms is not None:
             img, target = self._transforms(img, target)
+            img, target = self.transform(img, target)
         return img, target
 
 
 def get_coco(root, image_set, year, transforms, mode="instances"):
     anno_file_template = "{}_{}{}.json"
     PATHS = {
-        "train": (f"images/train{year}", os.path.join("annotations", anno_file_template.format(mode, "train", year))),
-        "val": (f"images/val{year}", os.path.join("annotations", anno_file_template.format(mode, "val", year))),
+        "train": (
+            f"images/train{year}",
+            os.path.join("annotations", anno_file_template.format(mode, "train", year)),
+        ),
+        "val": (
+            f"images/val{year}",
+            os.path.join("annotations", anno_file_template.format(mode, "val", year)),
+        ),
         # "train": ("val2014", os.path.join("annotations", anno_file_template.format(mode, "val")))
     }
 
@@ -77,36 +90,70 @@ def get_dataloader(args):
     # Data loading code
     print("Loading data")
 
-    dataset, num_classes = get_dataset(args.dataset, "train", 2023, get_transform(True, args), args.data_path, "keypoints")
-    dataset_test, _ = get_dataset(args.dataset, "val", 2023, get_transform(False, args), args.data_path, "keypoints")
+    dataset, num_classes = get_dataset(
+        args.dataset,
+        "train",
+        2023,
+        get_transform(True, args),
+        args.data_path,
+        "keypoints",
+    )
+    dataset_test, _ = get_dataset(
+        args.dataset,
+        "val",
+        2023,
+        get_transform(False, args),
+        args.data_path,
+        "keypoints",
+    )
 
     print("Creating data loaders")
     if args.distributed:
-        train_sampler = torch.utils.data.distributed.DistributedSampler(dataset, shuffle=True)
-        test_sampler = torch.utils.data.distributed.DistributedSampler(dataset_test, shuffle=False)
+        train_sampler = torch.utils.data.distributed.DistributedSampler(
+            dataset, shuffle=True
+        )
+        test_sampler = torch.utils.data.distributed.DistributedSampler(
+            dataset_test, shuffle=False
+        )
     else:
         train_sampler = torch.utils.data.RandomSampler(dataset)
         test_sampler = torch.utils.data.SequentialSampler(dataset_test)
 
     if args.aspect_ratio_group_factor >= 0:
-        group_ids = create_aspect_ratio_groups(dataset, k=args.aspect_ratio_group_factor)
-        train_batch_sampler = GroupedBatchSampler(train_sampler, group_ids, args.batch_size)
+        group_ids = create_aspect_ratio_groups(
+            dataset, k=args.aspect_ratio_group_factor
+        )
+        train_batch_sampler = GroupedBatchSampler(
+            train_sampler, group_ids, args.batch_size
+        )
     else:
-        train_batch_sampler = torch.utils.data.BatchSampler(train_sampler, args.batch_size, drop_last=True)
+        train_batch_sampler = torch.utils.data.BatchSampler(
+            train_sampler, args.batch_size, drop_last=True
+        )
 
     train_collate_fn = utils.collate_fn
     if args.use_copypaste:
         if args.data_augmentation != "lsj":
-            raise RuntimeError("SimpleCopyPaste algorithm currently only supports the 'lsj' data augmentation policies")
+            raise RuntimeError(
+                "SimpleCopyPaste algorithm currently only supports the 'lsj' data augmentation policies"
+            )
 
         train_collate_fn = utils.copypaste_collate_fn
 
     data_loader = torch.utils.data.DataLoader(
-        dataset, batch_sampler=train_batch_sampler, num_workers=args.workers, collate_fn=train_collate_fn
+        dataset,
+        batch_sampler=train_batch_sampler,
+        num_workers=args.workers,
+        collate_fn=train_collate_fn,
     )
 
     data_loader_test = torch.utils.data.DataLoader(
-        dataset_test, batch_size=1, sampler=test_sampler, num_workers=args.workers, collate_fn=utils.collate_fn
+        dataset_test,
+        batch_size=1,
+        sampler=test_sampler,
+        num_workers=args.workers,
+        collate_fn=utils.collate_fn,
     )
 
     return data_loader, data_loader_test, num_classes, train_sampler
+
