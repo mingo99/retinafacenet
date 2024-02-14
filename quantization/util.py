@@ -1,32 +1,34 @@
-from typing import List
-
 import torch
-from ppq.executor.op.torch.base import TorchBackendContext
-from ppq.IR import Operation
+from typing import Callable
+
+def parse_if_node(model):
+    for node in model.graph.node:
+        if node.op_type == "If":
+            for attr in node.attribute:
+                if attr.name == "else_branch":
+                    model.graph.output.extend(attr.g.output)
+                    length = len(attr.g.node)
+                    for j, n in enumerate(attr.g.node):
+                        if j == length-1:
+                            n.output[0] = node.output[0]
+                            
+                        model.graph.node.extend([n])
+            model.graph.node.remove(node)
+    return model
+
+def delete_node(node_names, model):
+    for node in model.graph.node:
+        if node.name in node_names:
+            model.graph.node.remove(node)
+    return model
 
 
-def ReduceMin_forward(
-    op: Operation, values: List[torch.Tensor], ctx: TorchBackendContext = None, **kwargs
-) -> torch.Tensor:
-    [input_value] = values
-    dim = op.attributes.get("axes", None)
-    keepdim = bool(op.attributes.get("keepdims", 1))
-    if len(input_value) == 0:
-        output = input_value
-    else:
-        if dim is None:
-            #  The default is to reduce over all the dimensions of the input tensor
-            output = torch.min(input_value)
-            if keepdim:
-                output = output.reshape([1] * input_value.dim())
-        else:
-            output, _ = torch.min(input_value, dim=dim[0], keepdim=keepdim)
-    return output
+def collate_fn(device) -> Callable:
+    def inner(batch):
+        sample = []
+        for b in batch:
+            sample.append(b[0])
+        sample = torch.stack(sample).to(device)
+        return sample
 
-
-def Ceil_forward(
-    op: Operation, values: List[torch.Tensor], ctx: TorchBackendContext = None, **kwargs
-):
-    input_data = values[0]
-    output = torch.ceil(input_data)
-    return output
+    return inner

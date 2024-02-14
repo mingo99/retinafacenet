@@ -2,6 +2,7 @@ checkpoints/
 log/
 __pycache__/
 samples/
+output/
 
 *.onnx
 *.pth

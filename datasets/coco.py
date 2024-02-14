@@ -2,7 +2,6 @@ import os
 
 import torch
 import torchvision
-from torchvision.models.detection.transform import GeneralizedRCNNTransform
 
 from . import presets
 from . import transforms as T
@@ -15,32 +14,30 @@ class CocoDetection(torchvision.datasets.CocoDetection):
         super().__init__(img_folder, ann_file)
         self._transforms = transforms
 
-        image_mean = [0.485, 0.456, 0.406]
-        image_std = [0.229, 0.224, 0.225]
-        self.transform = GeneralizedRCNNTransform(800, 1333, image_mean, image_std)
-
     def __getitem__(self, idx):
         img, target = super().__getitem__(idx)
         image_id = self.ids[idx]
         target = dict(image_id=image_id, annotations=target)
         if self._transforms is not None:
             img, target = self._transforms(img, target)
-            img, target = self.transform(img, target)
         return img, target
 
 
 def get_coco(root, image_set, year, transforms, mode="instances"):
-    anno_file_template = "{}_{}{}.json"
+    ann_file_template = "{}_{}{}.json"
     PATHS = {
         "train": (
             f"images/train{year}",
-            os.path.join("annotations", anno_file_template.format(mode, "train", year)),
+            os.path.join("annotations", ann_file_template.format(mode, "train", year)),
         ),
         "val": (
             f"images/val{year}",
-            os.path.join("annotations", anno_file_template.format(mode, "val", year)),
+            os.path.join("annotations", ann_file_template.format(mode, "val", year)),
         ),
-        # "train": ("val2014", os.path.join("annotations", anno_file_template.format(mode, "val")))
+        "calibration": (
+            f"images/val{year}",
+            os.path.join("annotations", ann_file_template.format(mode, "val", year)),
+        ),
     }
 
     t = [utils.ConvertCocoPolysToMask()]
@@ -58,7 +55,8 @@ def get_coco(root, image_set, year, transforms, mode="instances"):
     if image_set == "train":
         dataset = utils._coco_remove_images_without_annotations(dataset)
 
-    # dataset = torch.utils.data.Subset(dataset, [i for i in range(500)])
+    if image_set == "calibration":
+        dataset = torch.utils.data.Subset(dataset, [i for i in range(4)])
 
     return dataset
 

@@ -205,7 +205,6 @@ def get_coco_api_from_dataset(dataset):
         return dataset.coco
     return convert_to_coco_api(dataset)
 
-
 def collate_fn(batch):
     return tuple(zip(*batch))
 
