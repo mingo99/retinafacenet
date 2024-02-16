@@ -850,7 +850,6 @@ class RetinaFaceNet(nn.Module):
         head_outputs = self.head(features)
 
         # create the set of anchors
-        print("images", images)
         anchors = self.anchor_generator(images, features)
 
         losses = {}

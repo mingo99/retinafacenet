@@ -39,7 +39,7 @@ def get_args_parser(add_help=True):
     )
 
     parser.add_argument(
-        "--data-path", default="/mnt/e/Projects/data/cocofb", type=str, help="dataset path"
+        "--data-path", default="/mnt/d/Acc/software/data/cocofb", type=str, help="dataset path"
     )
     parser.add_argument("--dataset", default="coco", type=str, help="dataset name")
     parser.add_argument(
@@ -296,7 +296,7 @@ def main(args):
     if args.resume:
         checkpoint = torch.load(args.resume, map_location="cpu")
         model_without_ddp.load_state_dict(checkpoint["model"])
-        optimizer.load_state_dict(checkpoint["optimizer"])
+        # optimizer.load_state_dict(checkpoint["optimizer"])
         lr_scheduler.load_state_dict(checkpoint["lr_scheduler"])
         args.start_epoch = checkpoint["epoch"] + 1
         if args.amp:

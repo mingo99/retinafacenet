@@ -59,6 +59,7 @@ class CocoEvaluator:
         for iou_type, coco_eval in self.coco_eval.items():
             print(f"IoU metric: {iou_type}")
             coco_eval.summarize()
+
             # 获取每个类别的AP
             iStr = " {:<18} {} @[ IoU={:<9} | area={:>6s} | maxDets={:>3d} | cat={:>6s} ] = {:0.3f}"
             titleStr = "Average Precision"
@@ -67,15 +68,33 @@ class CocoEvaluator:
             areaRng = "all"
             maxDets = 100
             for catId in coco_eval.params.catIds:
-                s = coco_eval.eval["precision"][0, :, catId - 1, 0, 2]
+                s = coco_eval.eval["precision"]
+                s50 = s[0, :, catId - 1, 0, 2]
+                t = np.where(coco_eval.params.iouThrs==0.75)[0]
+                s75 = s[t][:, :, catId - 1, 0, 2]
+                s95 = s[:, :, catId - 1, 0, 2]
                 cat_name = coco_eval.cocoGt.cats[catId]["name"]
                 if len(s[s > -1]) == 0:
-                    mean_s = -1
+                    mean_s50 = -1
+                    mean_s75 = -1
+                    mean_s95 = -1
                 else:
-                    mean_s = np.mean(s[s > -1])
+                    mean_s50 = np.mean(s50[s50 > -1])
+                    mean_s75 = np.mean(s75[s75 > -1])
+                    mean_s95 = np.mean(s95[s95 > -1])
                 print(
                     iStr.format(
-                        titleStr, typeStr, iouStr, areaRng, maxDets, cat_name, mean_s
+                        titleStr, typeStr, "0.5", areaRng, maxDets, cat_name, mean_s50
+                    )
+                )
+                print(
+                    iStr.format(
+                        titleStr, typeStr, "0.75", areaRng, maxDets, cat_name, mean_s75
+                    )
+                )
+                print(
+                    iStr.format(
+                            titleStr, typeStr, "0.5:0.95", areaRng, maxDets, cat_name, mean_s95
                     )
                 )
             # 获取每个类别的AR
