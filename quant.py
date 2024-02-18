@@ -1,20 +1,23 @@
 # ------------------------------------------------------------
 # PPQ 最佳实践示例工程，在这个工程中，我们将向你展示如何充分调动 PPQ 的各项功能
 # ------------------------------------------------------------
-import warnings
-warnings.filterwarnings("ignore")
-
 import argparse
-import torch
-from ppq import TorchExecutor, TargetPlatform, layerwise_error_analyse, graphwise_error_analyse, convert_any_to_numpy
-from ppq.api import ENABLE_CUDA_KERNEL, QuantizationSettingFactory, export_ppq_graph
+import warnings
+
+from ppq import (TargetPlatform, TorchExecutor, convert_any_to_numpy,
+                 graphwise_error_analyse, layerwise_error_analyse)
+from ppq.api import (ENABLE_CUDA_KERNEL, QuantizationSettingFactory,
+                     export_ppq_graph)
 from ppq.executor import register_operation_handler
 
 import models
-from quantization.op import (Ceil_forward, ReduceMin_forward, Xor_forward)
-from quantization.api import quantize_torch_model, get_calibration_dataloader
+from quantization.api import get_calibration_dataloader, quantize_torch_model
+from quantization.op import Ceil_forward, ReduceMin_forward, Xor_forward
 from quantization.util import collate_fn as collate_fn_base
+
 # from datasets.coco import get_dataset, get_transform
+
+warnings.filterwarnings("ignore")
 
 register_operation_handler(ReduceMin_forward, "ReduceMin", TargetPlatform.SOI)
 register_operation_handler(Ceil_forward, "Ceil", TargetPlatform.SOI)

@@ -1,28 +1,11 @@
 from typing import List
 
 import torch
-from ppq.executor.op.torch.base import TorchBackendContext, ASSERT_NUM_OF_INPUT, VALUE_TO_EXECUTING_DEVICE
-from ppq.executor.torch import OPERATION_FORWARD_TABLE
+from ppq.executor.op.torch.base import (ASSERT_NUM_OF_INPUT,
+                                        VALUE_TO_EXECUTING_DEVICE,
+                                        TorchBackendContext)
 from ppq.IR import Operation
 
-def If_forward(
-    op: Operation, values: List[torch.Tensor], ctx: TorchBackendContext = None, **kwargs
-) -> torch.Tensor:
-    condition = values[0]
-    then_branch = op.attributes.get("then_branch",[])
-    else_branch = op.attributes.get("else_branch",[])
-    print(f"condition: {condition}")
-    # if condition:
-    #     return then_branch.output[0]
-        # for node in then_branch.node:
-        #     values = OPERATION_FORWARD_TABLE[op.platform][node.op_type](node)
-        #     print(values)
-    # else:
-    #     return else_branch.output[0]
-        # for node in else_branch.node:
-        #     values = OPERATION_FORWARD_TABLE[op.platform][node.op_type](node, values, ctx, **kwargs)
-    # print(f"values: {values}")
-    return values[0]
 
 def ReduceMin_forward(
     op: Operation, values: List[torch.Tensor], ctx: TorchBackendContext = None, **kwargs

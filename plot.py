@@ -1,4 +1,4 @@
-from plot.plot import plot_lr, plot_loss
+from plot.plot import plot_loss, plot_lr
 
 log_path = "./log/train.log"
 # plot_lr(log_path, save_path="lr.png")

@@ -1,5 +1,5 @@
 import re
-from typing import List, Dict
+
 
 def parse_lr(file_path: str):
     pattern = re.compile(r"lr: (\d+\.\d+)")
