@@ -75,8 +75,6 @@ def infer(imgs, model, device):
 
 def draw_boxes(image, boxes_face, boxes_body, names):
     img = cv2.cvtColor(np.asarray(image), cv2.COLOR_BGR2RGB)
-    print(boxes_face)
-    print(boxes_body)
     if boxes_face is not None:
         for i in range(boxes_face.shape[0]):
             bbox_face = boxes_face[i, :4]

@@ -168,11 +168,12 @@ class MobileFaceNet(Module):
 
 
 @register_model()
-def facenet_mobilev2(weights):
+def facenet_mobilev2(weights = None):
     """
     Args:
         weights(Str): path of weight
     """
     model = MobileFaceNet()
-    model.load_state_dict(torch.load(weights))
+    if weights:
+        model.load_state_dict(torch.load(weights))
     return model

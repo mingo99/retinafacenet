@@ -31,12 +31,13 @@ def load_face_db(face_db_path, det_model, rec_model, device):
 
 
 def match_face(faces_db, images, landmarks, rec_model, threshold, device):
+    s = time.time()
     imgs = pre_process(images, landmarks)
     if imgs is None:
         return None
     faces = post_process(imgs)
     # imgs = np.array(imgs, dtype="float32")
-    s = time.time()
+    # s = time.time()
     features = infer(faces, rec_model, device)
     print("人脸识别时间：%dms" % int((time.time() - s) * 1000))
     names = []
@@ -98,12 +99,13 @@ def match_fb(face_boxes, body_boxes):
     return match_boxes, match_ids
 
 
-def recognize(faces_db_path, image_path, weights, thresholds):
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    det_model = models.get_model("retinafacenet_resnet50_fpn", weights=weights[0])
-    det_model.eval().to(device)
-    rec_model = models.get_model("facenet_mobilev2", weights=weights[1])
-    rec_model.eval().to(device)
+def recognize(det_model,rec_model,device,faces_db_path, image_path, weights, thresholds):
+    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # # device = torch.device("cpu")
+    # det_model = models.get_model("retinafacenet_resnet50_fpn", weights=weights[0])
+    # det_model.eval().to(device)
+    # rec_model = models.get_model("facenet_mobilev2", weights=weights[1])
+    # rec_model.eval().to(device)
 
     faces_db = load_face_db(faces_db_path, det_model, rec_model, device)
 
@@ -115,6 +117,7 @@ def recognize(faces_db_path, image_path, weights, thresholds):
 
     names = match_face(faces_db, image, landmarks, rec_model, thresholds[1], device)
     match_body_boxes, _ = match_fb(face_boxes, body_boxes)
+    print(match_body_boxes)
 
     image = draw_boxes(image, face_boxes, match_body_boxes, names)
     cv.imwrite("result.jpg", image)

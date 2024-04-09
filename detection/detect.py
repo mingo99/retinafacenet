@@ -9,7 +9,7 @@ import models
 from ._utils import draw_boxes, infer
 
 
-def detect_image(image_in, threshold, weights=None):
+def detect_image(model, device, image_in, threshold, weights=None):
     """
     Test a image.
 
@@ -18,9 +18,9 @@ def detect_image(image_in, threshold, weights=None):
         threshold(Float): The threshold of scores to save predict results
         weights(Str): Weights path of model
     """
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = models.get_model("retinafacenet_resnet50_fpn", weights=weights)
-    model.eval().to(device)
+    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # model = models.get_model("retinafacenet_resnet50_fpn", weights=weights)
+    # model.eval().to(device)
     # read the image
     image = Image.open(image_in)
     # detect outputs
@@ -33,6 +33,7 @@ def detect_image(image_in, threshold, weights=None):
     cv.imwrite(f"samples/outputs/{save_name}.jpg", image)
     cv.imshow("Image", image)
     cv.waitKey(0)
+    cv.destroyAllWindows()
 
 
 def detect_video(video_in, threshold, weights):
