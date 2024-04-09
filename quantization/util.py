@@ -1,5 +1,7 @@
-import torch
 from typing import Callable
+
+import torch
+
 
 def parse_if_node(model):
     for node in model.graph.node:

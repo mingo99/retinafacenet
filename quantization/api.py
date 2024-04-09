@@ -1,20 +1,17 @@
+from typing import Any, Callable, List
+
 import onnx
 import torch
-
-from typing import Any, Callable,  List
-
-import torch
+from ppq.api import dump_torch_to_onnx, quantize_onnx_model
+from ppq.api.setting import QuantizationSetting
+from ppq.core import TargetPlatform, empty_ppq_cache
+from ppq.IR import BaseGraph
 from torch.utils.data import DataLoader
 
-from ppq.api import quantize_onnx_model, dump_torch_to_onnx
-from ppq.api.setting import ( QuantizationSetting,
-                             )
-from ppq.core import (TargetPlatform,
-                      empty_ppq_cache )
-from ppq.IR import (BaseGraph)
-
 from datasets.coco import get_dataset, get_transform
-from .util import parse_if_node, delete_node, collate_fn
+
+from .util import collate_fn, delete_node, parse_if_node
+
 
 def get_calibration_dataloader(args):
     print("Loading calibration data...")

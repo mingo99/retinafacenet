@@ -1,6 +1,8 @@
-import pandas as pd
 import matplotlib.pyplot as plt
-from .parse import parse_lr, parse_loss
+import pandas as pd
+
+from .parse import parse_loss, parse_lr
+
 
 def plot_lr(log_path: str, save_path: str = 'lr.png'):
     lrs = parse_lr(log_path)

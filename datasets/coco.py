@@ -6,7 +6,8 @@ import torchvision
 from . import presets
 from . import transforms as T
 from . import utils
-from .group_by_aspect_ratio import GroupedBatchSampler, create_aspect_ratio_groups
+from .group_by_aspect_ratio import (GroupedBatchSampler,
+                                    create_aspect_ratio_groups)
 
 
 class CocoDetection(torchvision.datasets.CocoDetection):

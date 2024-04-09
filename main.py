@@ -10,6 +10,7 @@ from torch.quantization import fuse_modules
 from torchvision.models.resnet import Bottleneck
 
 import models
+
 # import quantization.api as util
 
 fbnet = models.get_model("retinafacenet_resnet50_fpn").eval()
